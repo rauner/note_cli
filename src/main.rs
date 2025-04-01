@@ -1,11 +1,11 @@
+use chrono::{Datelike, Local};
 use clap::{Parser, Subcommand};
 use config::{Config, ConfigError, File};
+use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use chrono::{Datelike, Local};
-use dirs::config_dir;
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct NoteConfig {
     data_location: String,
@@ -71,11 +71,11 @@ fn get_config_path() -> PathBuf {
     config_path
 }
 fn load_config() -> Result<NoteConfig, ConfigError> {
-   let config_path = get_config_path();
-   let settings = Config::builder()
-       .add_source(File::from(config_path))
-       .build()?;
-   settings.try_deserialize()
+    let config_path = get_config_path();
+    let settings = Config::builder()
+        .add_source(File::from(config_path))
+        .build()?;
+    settings.try_deserialize()
 }
 fn save_config(config: &NoteConfig) -> Result<(), std::io::Error> {
     let config_path = get_config_path();
@@ -89,7 +89,9 @@ fn get_notes_folder() -> String {
 fn display_file_for_current_year(file_name: &str) {
     let notes_folder = get_notes_folder();
     let current_year = Local::now().year();
-    let file_path = Path::new(&notes_folder).join(current_year.to_string()).join(file_name);
+    let file_path = Path::new(&notes_folder)
+        .join(current_year.to_string())
+        .join(file_name);
     if file_path.exists() {
         open_file_with_nv(&file_path);
     } else {
@@ -142,4 +144,3 @@ fn open_file_with_nv(file_path: &Path) {
         .status()
         .expect("Failed to open file with nv");
 }
-
