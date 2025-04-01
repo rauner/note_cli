@@ -1,11 +1,13 @@
 use chrono::{Datelike, Local};
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::aot::{generate, Shell};
 use config::{Config, ConfigError, File};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::Command as ProcessCommand;
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct NoteConfig {
     data_location: String,
@@ -36,6 +38,12 @@ enum Commands {
     Week,
     /// Display or create month.md for the current month
     Month,
+    /// Generate shell completions
+    GenerateCompletions {
+        /// The shell to generate completions for
+        #[arg(long)]
+        shell: Shell,
+    },
 }
 fn main() {
     let cli = Cli::parse();
@@ -60,6 +68,11 @@ fn main() {
         }
         Commands::Month => {
             handle_note("month.md", "template/month.md");
+        }
+        Commands::GenerateCompletions { shell } => {
+            let mut cmd = Cli::command(); // Use the CommandFactory trait
+            let bin_name = cmd.get_name().to_string();
+            generate(*shell, &mut cmd, bin_name, &mut io::stdout());
         }
     }
 }
@@ -139,8 +152,9 @@ fn create_note_from_template(file_path: &Path, template_name: &str) {
     println!("Created new note from template: {}", file_path.display());
 }
 fn open_file_with_nv(file_path: &Path) {
-    Command::new("nv")
+    ProcessCommand::new("nv")
         .arg(file_path)
         .status()
         .expect("Failed to open file with nv");
 }
+

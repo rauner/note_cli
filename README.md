@@ -13,4 +13,9 @@ To install `note`, run the following command:
 cargo install --git <repository-url>
 ```
 Replace `<repository-url>` with the URL of this repo.
+### Completions
+To generate a completion script for a specific shell, you can run:
+```bash
+note generate-completions --shell fish > ~/.config/fish/completions/note.fish
+```
 
