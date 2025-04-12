@@ -35,8 +35,6 @@ enum Commands {
     /// Display index.md of the current year
     Index,
     /// Display a custom file of the current year
-    Foo,
-    /// Display or create day.md for the current date
     Day,
     /// Display or create week.md for the current week
     Week,
@@ -52,7 +50,10 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match &cli.command {
-        Commands::Config { data_location, editor } => {
+        Commands::Config {
+            data_location,
+            editor,
+        } => {
             let mut config = load_config().unwrap_or_default();
             if let Some(data_location) = data_location {
                 config.data_location = Some(data_location.clone());
@@ -66,9 +67,6 @@ fn main() {
         }
         Commands::Index => {
             display_file_for_current_year("index.md");
-        }
-        Commands::Foo => {
-            display_file_for_current_year("foo.md");
         }
         Commands::Day => {
             handle_note("day.md", "template/day.md");
@@ -170,4 +168,3 @@ fn open_file_with_editor(file_path: &Path) {
         .status()
         .expect("Failed to open file with editor");
 }
-

@@ -3,7 +3,10 @@
 ## Features
 - Configure the notes folder location.
 - Display or create notes for the current day, week, or month.
-- Display a custom file for the current year.
+## Dev
+- add day week month last to check for last existing
+- add day week month from-last to copy last into the current one
+- add sync that runs git deploy merge
 ## Installation
 ### Prerequisites
 - [Rust and Cargo](https://www.rust-lang.org/tools/install) must be installed on your system.
