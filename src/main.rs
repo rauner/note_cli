@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
 #[derive(Debug, Deserialize, Serialize, Default)]
 struct NoteConfig {
-    data_location: String,
+    data_location: Option<String>,
+    editor: Option<String>,
     // Add more configuration fields as needed
 }
 #[derive(Parser)]
@@ -22,11 +23,14 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Commands {
-    /// Configure the notes folder
+    /// Configure the notes folder and editor
     Config {
         /// Set the folder path
         #[arg(long)]
-        folder: String,
+        data_location: Option<String>,
+        /// Set the editor
+        #[arg(long)]
+        editor: Option<String>,
     },
     /// Display index.md of the current year
     Index,
@@ -48,11 +52,17 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match &cli.command {
-        Commands::Config { folder } => {
+        Commands::Config { data_location, editor } => {
             let mut config = load_config().unwrap_or_default();
-            config.data_location = folder.clone();
+            if let Some(data_location) = data_location {
+                config.data_location = Some(data_location.clone());
+                println!("Notes folder set to: {}", data_location);
+            }
+            if let Some(editor) = editor {
+                config.editor = Some(editor.clone());
+                println!("Editor set to: {}", editor);
+            }
             save_config(&config).expect("Failed to save configuration");
-            println!("Notes folder set to: {}", folder);
         }
         Commands::Index => {
             display_file_for_current_year("index.md");
@@ -98,7 +108,7 @@ fn save_config(config: &NoteConfig) -> Result<(), std::io::Error> {
 }
 fn get_notes_folder() -> String {
     let config = load_config().expect("Failed to load configuration");
-    config.data_location
+    config.data_location.expect("Notes folder not configured")
 }
 fn display_file_for_current_year(file_name: &str) {
     let notes_folder = get_notes_folder();
@@ -107,7 +117,7 @@ fn display_file_for_current_year(file_name: &str) {
         .join(current_year.to_string())
         .join(file_name);
     if file_path.exists() {
-        open_file_with_nv(&file_path);
+        open_file_with_editor(&file_path);
     } else {
         println!("File not found: {}", file_path.display());
     }
@@ -115,10 +125,10 @@ fn display_file_for_current_year(file_name: &str) {
 fn handle_note(note_name: &str, template_name: &str) {
     let file_path = get_note_path(note_name);
     if file_path.exists() {
-        open_file_with_nv(&file_path);
+        open_file_with_editor(&file_path);
     } else {
         create_note_from_template(&file_path, template_name);
-        open_file_with_nv(&file_path);
+        open_file_with_editor(&file_path);
     }
 }
 fn get_note_path(note_name: &str) -> PathBuf {
@@ -152,10 +162,12 @@ fn create_note_from_template(file_path: &Path, template_name: &str) {
     fs::write(&file_path, template_content).expect("Unable to write file");
     println!("Created new note from template: {}", file_path.display());
 }
-fn open_file_with_nv(file_path: &Path) {
-    ProcessCommand::new("nvim")
+fn open_file_with_editor(file_path: &Path) {
+    let config = load_config().expect("Failed to load configuration");
+    let editor = config.editor.expect("Editor not configured");
+    ProcessCommand::new(editor)
         .arg(file_path)
         .status()
-        .expect("Failed to open file with nvim");
+        .expect("Failed to open file with editor");
 }
 
