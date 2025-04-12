@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::aot::{generate, Shell};
-use config::{Config, ConfigError, File};
+use config::{Config, ConfigError, File, FileFormat};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -86,7 +86,8 @@ fn get_config_path() -> PathBuf {
 fn load_config() -> Result<NoteConfig, ConfigError> {
     let config_path = get_config_path();
     let settings = Config::builder()
-        .add_source(File::from(config_path))
+        // Explicitly specify the format as TOML
+        .add_source(File::from(config_path).format(FileFormat::Toml))
         .build()?;
     settings.try_deserialize()
 }
@@ -152,9 +153,9 @@ fn create_note_from_template(file_path: &Path, template_name: &str) {
     println!("Created new note from template: {}", file_path.display());
 }
 fn open_file_with_nv(file_path: &Path) {
-    ProcessCommand::new("nv")
+    ProcessCommand::new("nvim")
         .arg(file_path)
         .status()
-        .expect("Failed to open file with nv");
+        .expect("Failed to open file with nvim");
 }
 
