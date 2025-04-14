@@ -36,18 +36,21 @@ enum Commands {
     Index,
     /// Display a custom file of the current year
     Day {
-        /// Optionally specify 'last' to find the last existing day note
-        last: Option<String>,
+        /// Use the last existing day note
+        #[arg(long)]
+        last: bool,
     },
     /// Display or create week.md for the current week
     Week {
-        /// Optionally specify 'last' to find the last existing week note
-        last: Option<String>,
+        /// Use the last existing week note
+        #[arg(long)]
+        last: bool,
     },
     /// Display or create month.md for the current month
     Month {
-        /// Optionally specify 'last' to find the last existing month note
-        last: Option<String>,
+        /// Use the last existing month note
+        #[arg(long)]
+        last: bool,
     },
     /// Generate shell completions
     GenerateCompletions {
@@ -78,21 +81,21 @@ fn main() {
             display_file_for_current_year("index.md");
         }
         Commands::Day { last } => {
-            if last.as_deref() == Some("last") {
+            if *last {
                 find_and_open_last_existing("day.md");
             } else {
                 handle_note("day.md", "template/day.md");
             }
         }
         Commands::Week { last } => {
-            if last.as_deref() == Some("last") {
+            if *last {
                 find_and_open_last_existing("week.md");
             } else {
                 handle_note("week.md", "template/week.md");
             }
         }
         Commands::Month { last } => {
-            if last.as_deref() == Some("last") {
+            if *last {
                 find_and_open_last_existing("month.md");
             } else {
                 handle_note("month.md", "template/month.md");
