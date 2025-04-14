@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local};
+use chrono::{Datelike, Local, NaiveDate, Duration};
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::aot::{generate, Shell};
 use config::{Config, ConfigError, File, FileFormat};
@@ -35,11 +35,20 @@ enum Commands {
     /// Display index.md of the current year
     Index,
     /// Display a custom file of the current year
-    Day,
+    Day {
+        /// Optionally specify 'last' to find the last existing day note
+        last: Option<String>,
+    },
     /// Display or create week.md for the current week
-    Week,
+    Week {
+        /// Optionally specify 'last' to find the last existing week note
+        last: Option<String>,
+    },
     /// Display or create month.md for the current month
-    Month,
+    Month {
+        /// Optionally specify 'last' to find the last existing month note
+        last: Option<String>,
+    },
     /// Generate shell completions
     GenerateCompletions {
         /// The shell to generate completions for
@@ -68,14 +77,26 @@ fn main() {
         Commands::Index => {
             display_file_for_current_year("index.md");
         }
-        Commands::Day => {
-            handle_note("day.md", "template/day.md");
+        Commands::Day { last } => {
+            if last.as_deref() == Some("last") {
+                find_and_open_last_existing("day.md");
+            } else {
+                handle_note("day.md", "template/day.md");
+            }
         }
-        Commands::Week => {
-            handle_note("week.md", "template/week.md");
+        Commands::Week { last } => {
+            if last.as_deref() == Some("last") {
+                find_and_open_last_existing("week.md");
+            } else {
+                handle_note("week.md", "template/week.md");
+            }
         }
-        Commands::Month => {
-            handle_note("month.md", "template/month.md");
+        Commands::Month { last } => {
+            if last.as_deref() == Some("last") {
+                find_and_open_last_existing("month.md");
+            } else {
+                handle_note("month.md", "template/month.md");
+            }
         }
         Commands::GenerateCompletions { shell } => {
             let mut cmd = Cli::command(); // Use the CommandFactory trait
@@ -167,4 +188,51 @@ fn open_file_with_editor(file_path: &Path) {
         .arg(file_path)
         .status()
         .expect("Failed to open file with editor");
+}
+fn find_and_open_last_existing(note_name: &str) {
+    let notes_folder = get_notes_folder();
+    let now = Local::now();
+    let mut date = NaiveDate::from_ymd_opt(now.year(), now.month(), now.day()).unwrap();
+    // Calculate the date two years ago
+    let two_years_ago = now.date_naive() - Duration::days(365 * 2);
+    loop {
+        let file_path = match note_name {
+            "day.md" => Path::new(&notes_folder)
+                .join(date.year().to_string())
+                .join(format!("{:02}", date.month()))
+                .join(format!("{:02}", date.day()))
+                .join(note_name),
+            "week.md" => Path::new(&notes_folder)
+                .join(date.year().to_string())
+                .join(format!("{:02}", date.month()))
+                .join(note_name),
+            "month.md" => Path::new(&notes_folder)
+                .join(date.year().to_string())
+                .join(format!("{:02}", date.month()))
+                .join(note_name),
+            _ => panic!("Unknown note type"),
+        };
+        if file_path.exists() {
+            open_file_with_editor(&file_path);
+            return;
+        }
+        // Move to the previous day/week/month
+        date = match note_name {
+            "day.md" => date.pred_opt().unwrap(),
+            "week.md" => date - Duration::weeks(1),
+            "month.md" => {
+                if date.month() == 1 {
+                    NaiveDate::from_ymd_opt(date.year() - 1, 12, 1).unwrap()
+                } else {
+                    NaiveDate::from_ymd_opt(date.year(), date.month() - 1, 1).unwrap()
+                }
+            }
+            _ => panic!("Unknown note type"),
+        };
+        // Stop if we go too far back
+        if date < two_years_ago {
+            println!("No existing note found.");
+            return;
+        }
+    }
 }
